@@ -188,16 +188,19 @@ Respond with JSON containing:
 JSON Response:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                return json.loads(response.text)
+                
+                if response.text:
+                    return json.loads(response.text)
         except Exception as e:
             logger.error(f"Query planning failed: {e}")
         
@@ -225,15 +228,17 @@ IMPORTANT RULES:
 Respond with ONLY the SQL query, no explanation:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt
-            )
-            
-            if response.text:
-                sql = response.text.strip()
-                sql = sql.replace("```sql", "").replace("```", "").strip()
-                return sql
+            gemini = get_gemini_client()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt
+                )
+                
+                if response.text:
+                    sql = response.text.strip()
+                    sql = sql.replace("```sql", "").replace("```", "").strip()
+                    return sql
         except Exception as e:
             logger.error(f"SQL generation failed: {e}")
         
@@ -256,16 +261,19 @@ Only read operations are allowed.
 Respond with ONLY the JSON pipeline array:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                return json.loads(response.text)
+                
+                if response.text:
+                    return json.loads(response.text)
         except Exception as e:
             logger.error(f"MongoDB pipeline generation failed: {e}")
         
@@ -296,16 +304,19 @@ Respond with JSON containing:
 JSON Response:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                return json.loads(response.text)
+                
+                if response.text:
+                    return json.loads(response.text)
         except Exception as e:
             logger.error(f"Chart recommendation failed: {e}")
         
@@ -338,17 +349,20 @@ Respond with JSON containing:
 JSON Response:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                data = json.loads(response.text)
-                return data.get("insights", []), data.get("explanation", "")
+                
+                if response.text:
+                    data = json.loads(response.text)
+                    return data.get("insights", []), data.get("explanation", "")
         except Exception as e:
             logger.error(f"Insight generation failed: {e}")
         
