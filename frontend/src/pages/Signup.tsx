@@ -36,8 +36,8 @@ const signupSchema = yup.object().shape({
     .required("Please confirm your password"),
   org: yup
     .string()
-    .min(2, "Organization must be at least 2 characters")
-    .required("Organization is required"),
+    .matches(/^[A-Z]{3}$/, "Tenant code must be exactly 3 uppercase letters")
+    .required("Tenant code is required"),
   tenant_name: yup
     .string()
     .min(2, "Tenant name must be at least 2 characters")
