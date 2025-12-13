@@ -11,12 +11,14 @@ from app.core.logging_config import logger
 
 
 SAMPLE_QUESTIONS = [
-    {"question": "What are the total sales by category?", "category": "aggregation", "description": "Shows sales breakdown by product category"},
-    {"question": "Show me the trend of orders over the last 6 months", "category": "trend", "description": "Displays order trends over time"},
-    {"question": "Which products have the highest revenue?", "category": "ranking", "description": "Lists top performing products"},
-    {"question": "Compare sales performance across regions", "category": "comparison", "description": "Regional sales comparison"},
-    {"question": "What is the average order value by customer segment?", "category": "aggregation", "description": "Customer segment analysis"},
-    {"question": "Show distribution of customers by country", "category": "distribution", "description": "Geographic customer distribution"},
+    {"question": "Show me monthly expenses for 2024", "category": "trend", "description": "Monthly expense breakdown for 2024"},
+    {"question": "What is the total sales by product category?", "category": "aggregation", "description": "Sales breakdown by product category"},
+    {"question": "Compare expenses by category for 2024", "category": "comparison", "description": "Expense comparison across categories"},
+    {"question": "Top 10 products by revenue in 2024", "category": "ranking", "description": "Highest revenue products"},
+    {"question": "Show sales trend by month for 2023", "category": "trend", "description": "Monthly sales trend for 2023"},
+    {"question": "What is the total expense by department?", "category": "aggregation", "description": "Department-wise expense totals"},
+    {"question": "Compare 2023 vs 2024 sales performance", "category": "comparison", "description": "Year over year sales comparison"},
+    {"question": "Which vendors have the highest expenses?", "category": "ranking", "description": "Top vendors by expense amount"},
 ]
 
 
