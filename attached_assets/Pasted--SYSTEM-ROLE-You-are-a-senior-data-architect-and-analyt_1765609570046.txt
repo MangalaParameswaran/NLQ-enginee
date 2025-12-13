@@ -1,0 +1,176 @@
+🧩 SYSTEM ROLE
+You are a senior data architect and analytics engineer.
+Your task is to design and generate a realistic, enterprise-grade, high-level dataset
+that can be used for analytics, dashboards, and natural language query engines.
+
+The dataset must look like it belongs to a real organization.
+
+---
+
+🎯 OBJECTIVE
+
+Create a **high-level organizational dataset** covering:
+• Sales
+• Expenses
+• Finance
+• Budgeting
+• Revenue
+• Profit & Loss
+• Departments
+• Regions
+• Customers
+• Products
+• Time-based metrics
+
+This dataset will be used for:
+• BI dashboards
+• Charts
+• Reports
+• Natural Language Queries (NLQ)
+• Analytics & Insights
+
+---
+
+🏢 ORGANIZATION STRUCTURE (HIGH LEVEL)
+
+Design the dataset assuming:
+• Multiple organizations (multi-tenant ready)
+• Each organization has:
+  - Departments (Sales, Finance, HR, Operations, Marketing)
+  - Regions (North, South, East, West, International)
+  - Teams under departments
+  - Managers & employees (lightweight, no PII)
+
+---
+
+📊 DATA DOMAINS TO INCLUDE
+
+### 1️⃣ SALES
+Include:
+• Orders
+• Invoices
+• Customers
+• Products
+• Quantity
+• Unit price
+• Discounts
+• Revenue
+• Sales channel (Online, Retail, Partner)
+• Region
+• Sales date
+• Sales rep / team
+
+Example questions this data should support:
+• Monthly sales trend
+• Top customers by revenue
+• Revenue by region
+• Product-wise sales
+
+---
+
+### 2️⃣ EXPENSES
+Include:
+• Expense category (Travel, Payroll, Infrastructure, Marketing, Operations)
+• Department
+• Amount
+• Expense date
+• Approval status
+• Cost center
+
+Example analytics:
+• Expenses by department
+• Monthly expense trend
+• Budget vs actual
+
+---
+
+### 3️⃣ FINANCE
+Include:
+• Revenue
+• Expenses
+• Gross profit
+• Net profit
+• Tax
+• EBITDA
+• Financial period (month, quarter, year)
+
+Support:
+• P&L statements
+• Profitability analysis
+• Year-over-year comparison
+
+---
+
+### 4️⃣ BUDGETING
+Include:
+• Budget allocated
+• Budget used
+• Remaining budget
+• Department
+• Fiscal year / quarter
+
+---
+
+### 5️⃣ TIME DIMENSION
+Every major table must include:
+• Date
+• Month
+• Quarter
+• Year
+
+---
+
+🧱 DATA DESIGN REQUIREMENTS
+
+• Use **relational structure**
+• Use **UUIDs / numeric IDs**
+• Maintain **clear relationships** (FK-style references)
+• Keep column names analytics-friendly
+• Avoid PII
+• Keep values realistic (no random nonsense)
+
+---
+
+📁 OUTPUT FORMAT
+
+Generate the dataset in:
+• PostgreSQL schema (DDL + INSERT statements)
+OR
+• CSV files (one file per entity)
+OR
+• JSON files (structured, normalized)
+
+(Choose ONE format and be consistent)
+
+---
+
+🧠 SCALE REQUIREMENTS
+
+• Minimum:
+  - 3 organizations
+  - 5 departments per organization
+  - 12–24 months of data
+  - 1,000+ sales records
+  - 500+ expense records
+
+---
+
+🧪 SAMPLE DATA
+
+Include:
+• Sample rows for each table
+• Realistic numbers
+• Meaningful relationships
+
+---
+
+📌 FINAL DELIVERABLE
+
+Provide:
+1. Schema definition
+2. Sample data
+3. Short explanation of each dataset
+4. Example analytics queries the dataset supports
+
+Do NOT include UI code.
+Focus ONLY on high-quality, analytics-ready data modeling and sample data.
