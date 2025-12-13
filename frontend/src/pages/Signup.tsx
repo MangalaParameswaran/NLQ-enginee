@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Paper,
@@ -11,40 +11,38 @@ import {
   CircularProgress,
   Grid,
   useTheme,
-} from '@mui/material';
-import * as yup from 'yup';
-import { useAuth } from '../context/AuthContext';
+} from "@mui/material";
+import * as yup from "yup";
+import { useAuth } from "../context/AuthContext";
 
 const signupSchema = yup.object().shape({
   name: yup
     .string()
-    .min(2, 'Name must be at least 2 characters')
-    .required('Full name is required'),
+    .min(2, "Name must be at least 2 characters")
+    .required("Full name is required"),
   email: yup
     .string()
-    .email('Please enter a valid email address')
-    .required('Email is required'),
+    .email("Please enter a valid email address")
+    .required("Email is required"),
   password: yup
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .matches(/[0-9]/, 'Password must contain at least one number')
-    .required('Password is required'),
+    .min(8, "Password must be at least 8 characters")
+    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .matches(/[0-9]/, "Password must contain at least one number")
+    .required("Password is required"),
   confirmPassword: yup
     .string()
-    .oneOf([yup.ref('password')], 'Passwords must match')
-    .required('Please confirm your password'),
+    .oneOf([yup.ref("password")], "Passwords must match")
+    .required("Please confirm your password"),
   org: yup
     .string()
-    .min(2, 'Organization must be at least 2 characters')
-    .required('Organization is required'),
+    .min(2, "Organization must be at least 2 characters")
+    .required("Organization is required"),
   tenant_name: yup
     .string()
-    .min(2, 'Tenant name must be at least 2 characters')
-    .required('Tenant name is required'),
-  phone_number: yup
-    .string()
-    .optional(),
+    .min(2, "Tenant name must be at least 2 characters")
+    .required("Tenant name is required"),
+  phone_number: yup.string().optional(),
 });
 
 const Signup: React.FC = () => {
@@ -52,40 +50,40 @@ const Signup: React.FC = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    org: '',
-    tenant_name: '',
-    phone_number: '',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    org: "",
+    tenant_name: "",
+    phone_number: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const validateField = async (field: string) => {
     try {
       await signupSchema.validateAt(field, formData);
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     } catch (err) {
       if (err instanceof yup.ValidationError) {
-        setErrors(prev => ({ ...prev, [field]: err.message }));
+        setErrors((prev) => ({ ...prev, [field]: err.message }));
       }
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError('');
+    setSubmitError("");
     setErrors({});
 
     try {
@@ -93,7 +91,7 @@ const Signup: React.FC = () => {
     } catch (err) {
       if (err instanceof yup.ValidationError) {
         const newErrors: Record<string, string> = {};
-        err.inner.forEach(error => {
+        err.inner.forEach((error) => {
           if (error.path) {
             newErrors[error.path] = error.message;
           }
@@ -114,9 +112,9 @@ const Signup: React.FC = () => {
         tenant_name: formData.tenant_name,
         phone_number: formData.phone_number || undefined,
       });
-      navigate('/');
+      navigate("/");
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Signup failed';
+      const errorMessage = err instanceof Error ? err.message : "Signup failed";
       setSubmitError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -126,13 +124,14 @@ const Signup: React.FC = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: theme.palette.mode === 'dark'
-          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          theme.palette.mode === "dark"
+            ? "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+            : "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
         p: 2,
       }}
     >
@@ -141,27 +140,27 @@ const Signup: React.FC = () => {
         sx={{
           p: 4,
           maxWidth: 520,
-          width: '100%',
+          width: "100%",
           borderRadius: 4,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-          mx: 'auto',
+          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+          mx: "auto",
         }}
       >
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Box sx={{ textAlign: "center", mb: 4 }}>
           <Box
             sx={{
               width: 60,
               height: 60,
               borderRadius: 3,
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              mx: 'auto',
+              background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
               mb: 2,
             }}
           >
-            <Typography variant="h4" sx={{ color: 'white', fontWeight: 700 }}>
+            <Typography variant="h4" sx={{ color: "white", fontWeight: 700 }}>
               N
             </Typography>
           </Box>
@@ -188,7 +187,7 @@ const Signup: React.FC = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                onBlur={() => validateField('name')}
+                onBlur={() => validateField("name")}
                 error={!!errors.name}
                 helperText={errors.name}
               />
@@ -201,7 +200,7 @@ const Signup: React.FC = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                onBlur={() => validateField('email')}
+                onBlur={() => validateField("email")}
                 error={!!errors.email}
                 helperText={errors.email}
               />
@@ -214,7 +213,7 @@ const Signup: React.FC = () => {
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                onBlur={() => validateField('password')}
+                onBlur={() => validateField("password")}
                 error={!!errors.password}
                 helperText={errors.password}
               />
@@ -227,7 +226,7 @@ const Signup: React.FC = () => {
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                onBlur={() => validateField('confirmPassword')}
+                onBlur={() => validateField("confirmPassword")}
                 error={!!errors.confirmPassword}
                 helperText={errors.confirmPassword}
               />
@@ -235,26 +234,26 @@ const Signup: React.FC = () => {
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="Organization"
+                label="Org Code"
                 name="org"
                 value={formData.org}
                 onChange={handleChange}
-                onBlur={() => validateField('org')}
+                onBlur={() => validateField("org")}
                 error={!!errors.org}
-                helperText={errors.org || 'e.g., ITL, ITD'}
+                helperText={errors.org || "e.g., ITL, ITD"}
                 placeholder="e.g., ITL, ITD"
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
-                label="Tenant Name"
+                label="Org Name"
                 name="tenant_name"
                 value={formData.tenant_name}
                 onChange={handleChange}
-                onBlur={() => validateField('tenant_name')}
+                onBlur={() => validateField("tenant_name")}
                 error={!!errors.tenant_name}
-                helperText={errors.tenant_name || 'Your company name'}
+                helperText={errors.tenant_name || "Your company name"}
                 placeholder="Your company name"
               />
             </Grid>
@@ -277,11 +276,15 @@ const Signup: React.FC = () => {
             disabled={isLoading}
             sx={{ mt: 3, mb: 2, py: 1.5 }}
           >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+            {isLoading ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Create Account"
+            )}
           </Button>
 
           <Typography variant="body2" textAlign="center" color="text.secondary">
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Link component={RouterLink} to="/login" underline="hover">
               Sign in
             </Link>

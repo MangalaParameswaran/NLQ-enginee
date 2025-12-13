@@ -134,8 +134,21 @@ const Dashboard: React.FC = () => {
 
   const isQuerySupported = (query: string): boolean => {
     const lowerQuery = query.toLowerCase();
-    const dataKeywords = ['show', 'list', 'get', 'find', 'count', 'total', 'average', 'sum', 'how many', 'what', 'which', 'top', 'bottom', 'highest', 'lowest', 'all', 'revenue', 'sales', 'orders', 'customers', 'products', 'users', 'employees', 'departments'];
+    const dataKeywords = ['show', 'list', 'get', 'find', 'count', 'total', 'average', 'sum', 'how many', 'what', 'which', 'top', 'bottom', 'highest', 'lowest', 'all', 'revenue', 'sales', 'orders', 'customers', 'products', 'users', 'employees', 'departments', 'trend'];
     return dataKeywords.some(keyword => lowerQuery.includes(keyword));
+  };
+
+  const isTrendQuery = (query: string): boolean => {
+    const lowerQuery = query.toLowerCase();
+    return ['trend', 'over time', 'last month', 'last week', 'last year', 'over the last', 'monthly', 'weekly', 'daily', 'growth', 'progression', 'history'].some(k => lowerQuery.includes(k));
+  };
+
+  const hasTimeBasedData = (data: Record<string, unknown>[]): { hasTime: boolean; timeColumn?: string } => {
+    if (!data || data.length === 0) return { hasTime: false };
+    const columns = Object.keys(data[0]);
+    const timePatterns = ['date', 'month', 'week', 'year', 'day', 'time', 'period', 'quarter', 'created', 'updated'];
+    const timeColumn = columns.find(col => timePatterns.some(p => col.toLowerCase().includes(p)));
+    return { hasTime: !!timeColumn && data.length > 1, timeColumn };
   };
 
   const handleSendMessage = async (message: string, outputPreference: OutputPreference) => {
@@ -191,16 +204,27 @@ const Dashboard: React.FC = () => {
           loadConversations();
         }
 
-        const resultData = data.result?.data || [];
+        const resultData = (data.result?.data || []) as Record<string, unknown>[];
         let effectiveChartType = data.chart?.chart_type || 'table';
         let effectiveOutputPref = outputPreference;
+        let contentMessage = data.explanation || 'Here are your results.';
 
-        if (outputPreference === 'chart' && resultData.length > 0) {
-          const columns = Object.keys(resultData[0] as Record<string, unknown>);
-          const numericCols = columns.filter(k => {
-            const val = (resultData[0] as Record<string, unknown>)[k];
-            return typeof val === 'number';
-          });
+        const isTrend = isTrendQuery(message);
+        const timeCheck = hasTimeBasedData(resultData);
+
+        if (isTrend && !timeCheck.hasTime) {
+          if (resultData.length <= 1) {
+            contentMessage = `The query returned ${resultData.length === 0 ? 'no data' : 'only a single aggregated value'}, which is not sufficient to show a trend.\n\nTo see a trend, the data needs multiple time-based data points (e.g., by month, week, or day).\n\n**Options:**\n- View as **Table** to see the current value\n- View as **Insights** for a summary\n- Try rephrasing with time grouping: "Show monthly orders for the last 6 months"`;
+            effectiveOutputPref = 'insights';
+            effectiveChartType = 'table';
+          } else if (!timeCheck.timeColumn) {
+            contentMessage = `The data doesn't contain a time-based column (like date, month, or week) needed to show a trend.\n\n**Suggestions:**\n- Try: "Show orders grouped by month"\n- Or: "Show sales by week for the last 3 months"\n\nCurrently showing your results as a table.`;
+            effectiveOutputPref = 'table';
+            effectiveChartType = 'table';
+          }
+        } else if (outputPreference === 'chart' && resultData.length > 0) {
+          const columns = Object.keys(resultData[0]);
+          const numericCols = columns.filter(k => typeof resultData[0][k] === 'number');
           if (numericCols.length === 0 || resultData.length < 2) {
             effectiveChartType = 'table';
             effectiveOutputPref = 'table';
@@ -210,7 +234,7 @@ const Dashboard: React.FC = () => {
         const assistantMessage: Message = {
           id: data.message_id,
           role: 'assistant',
-          content: data.explanation || 'Here are your results.',
+          content: contentMessage,
           generated_query: data.generated_query?.sql,
           chart_type: effectiveOutputPref === 'table' ? 'table' : effectiveChartType,
           chart_data: JSON.stringify({
