@@ -1,4 +1,4 @@
-import { createTheme, ThemeOptions } from '@mui/material/styles';
+import { createTheme, type ThemeOptions } from '@mui/material/styles';
 
 const getDesignTokens = (mode: 'light' | 'dark'): ThemeOptions => ({
   palette: {
