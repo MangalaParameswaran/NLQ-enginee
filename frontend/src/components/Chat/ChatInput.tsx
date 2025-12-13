@@ -8,7 +8,7 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
-import { Send, Mic, MicOff, Stop } from '@mui/icons-material';
+import { Send, Mic, Stop } from '@mui/icons-material';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 
 interface ChatInputProps {

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 
 const API_BASE_URL = '/api';
 
@@ -17,7 +17,7 @@ interface GatewayResponse {
 
 class ApiClient {
   private client: AxiosInstance;
-  private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
+  private debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private throttleTimestamps: Map<string, number> = new Map();
 
   constructor() {

@@ -4,7 +4,6 @@ import {
   Paper,
   Typography,
   IconButton,
-  Tooltip,
   Collapse,
   Chip,
   Rating,
@@ -18,8 +17,6 @@ import {
   ExpandMore,
   ExpandLess,
   Code,
-  ThumbUp,
-  ThumbDown,
   ContentCopy,
 } from '@mui/icons-material';
 import ChartRenderer from '../Charts/ChartRenderer';
