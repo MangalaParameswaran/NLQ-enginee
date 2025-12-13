@@ -2,13 +2,23 @@ import os
 import json
 import logging
 from typing import Dict, Any, List, Optional, Tuple
-from google import genai
-from google.genai import types
 from app.core.config import settings
 from app.core.logging_config import logger
 
+client = None
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", ""))
+def get_gemini_client():
+    global client
+    if client is None:
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if api_key:
+            from google import genai
+            client = genai.Client(api_key=api_key)
+    return client
+
+def get_genai_types():
+    from google.genai import types
+    return types
 
 
 class IntentDetector:
@@ -43,23 +53,26 @@ Respond with JSON containing:
 JSON Response:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                result = json.loads(response.text)
-                return {
-                    "intent_type": result.get("intent_type", "summary"),
-                    "confidence": result.get("confidence", 0.5),
-                    "entities": result.get("entities", {}),
-                    "is_ambiguous": result.get("is_ambiguous", False),
-                    "clarification_question": result.get("clarification_question")
-                }
+                
+                if response.text:
+                    result = json.loads(response.text)
+                    return {
+                        "intent_type": result.get("intent_type", "summary"),
+                        "confidence": result.get("confidence", 0.5),
+                        "entities": result.get("entities", {}),
+                        "is_ambiguous": result.get("is_ambiguous", False),
+                        "clarification_question": result.get("clarification_question")
+                    }
         except Exception as e:
             logger.error(f"Intent detection failed: {e}")
         
@@ -90,16 +103,19 @@ Respond with JSON containing:
 JSON Response:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                return json.loads(response.text)
+                
+                if response.text:
+                    return json.loads(response.text)
         except Exception as e:
             logger.error(f"Metric extraction failed: {e}")
         
@@ -128,16 +144,19 @@ Respond with JSON containing:
 JSON Response:"""
         
         try:
-            response = client.models.generate_content(
-                model=settings.GEMINI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+            gemini = get_gemini_client()
+            types = get_genai_types()
+            if gemini:
+                response = gemini.models.generate_content(
+                    model=settings.GEMINI_MODEL,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
                 )
-            )
-            
-            if response.text:
-                return json.loads(response.text)
+                
+                if response.text:
+                    return json.loads(response.text)
         except Exception as e:
             logger.error(f"Filter building failed: {e}")
         
