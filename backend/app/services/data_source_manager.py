@@ -3,10 +3,24 @@ from sqlalchemy import create_engine, text
 from typing import List, Dict, Any, Optional, Tuple
 import json
 import time
+from datetime import date, datetime
+from decimal import Decimal
 from abc import ABC, abstractmethod
 from app.models.data_source import DataSource
 from app.core.config import settings
 from app.core.logging_config import logger
+
+
+def serialize_value(value):
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    elif isinstance(value, Decimal):
+        return float(value)
+    return value
+
+
+def serialize_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    return {k: serialize_value(v) for k, v in row.items()}
 
 
 class QueryExecutor(ABC):
@@ -40,7 +54,7 @@ class PostgreSQLQueryExecutor(QueryExecutor):
         with self.engine.connect() as conn:
             result = conn.execute(text(query), params or {})
             columns = list(result.keys())
-            rows = [dict(zip(columns, row)) for row in result.fetchall()]
+            rows = [serialize_row(dict(zip(columns, row))) for row in result.fetchall()]
         
         execution_time = (time.time() - start_time) * 1000
         
