@@ -31,7 +31,7 @@ class QueryEngineService:
         return SAMPLE_QUESTIONS
     
     def get_schema_context(self, tenant_id: int, data_source_id: Optional[int] = None) -> str:
-        from app.models.datasource import DataSource
+        from app.models.data_source import DataSource
         
         data_sources = self.db.query(DataSource).filter(
             DataSource.tenant_id == tenant_id,
