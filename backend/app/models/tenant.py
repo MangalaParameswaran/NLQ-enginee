@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -30,14 +30,11 @@ class Organization(Base):
     __tablename__ = "organizations"
     
     id = Column(Integer, primary_key=True, index=True)
-    tenant_id = Column(Integer, nullable=False, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
     display_name = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    tenant = relationship("Tenant", back_populates="organizations", foreign_keys=[tenant_id])
+    tenant = relationship("Tenant", back_populates="organizations")
     users = relationship("User", back_populates="organization")
-    
-    from sqlalchemy import ForeignKey
-    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
