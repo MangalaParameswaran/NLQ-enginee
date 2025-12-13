@@ -75,27 +75,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (response.success && response.data) {
-      const { user: userData, tokens } = response.data;
-      localStorage.setItem('access_token', tokens.access_token);
-      localStorage.setItem('refresh_token', tokens.refresh_token);
-      setUser(userData);
+      const data = response.data as { user: User; tokens: { access_token: string; refresh_token: string } };
+      localStorage.setItem('access_token', data.tokens.access_token);
+      localStorage.setItem('refresh_token', data.tokens.refresh_token);
+      setUser(data.user);
     } else {
       throw new Error(response.error || 'Login failed');
     }
   };
 
-  const signup = async (data: SignupData) => {
+  const signup = async (signupData: SignupData) => {
     const response = await apiClient.post({
       service: 'auth',
       action: 'signup',
-      payload: data,
+      payload: signupData as unknown as Record<string, unknown>,
     });
 
     if (response.success && response.data) {
-      const { user: userData, tokens } = response.data;
-      localStorage.setItem('access_token', tokens.access_token);
-      localStorage.setItem('refresh_token', tokens.refresh_token);
-      setUser(userData);
+      const data = response.data as { user: User; tokens: { access_token: string; refresh_token: string } };
+      localStorage.setItem('access_token', data.tokens.access_token);
+      localStorage.setItem('refresh_token', data.tokens.refresh_token);
+      setUser(data.user);
     } else {
       throw new Error(response.error || 'Signup failed');
     }
@@ -115,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (response.success && response.data) {
-      setUser(response.data);
+      setUser(response.data as User);
     } else {
       throw new Error('Session expired');
     }
