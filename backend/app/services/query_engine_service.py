@@ -161,7 +161,7 @@ class QueryEngineService:
             chart_type=chart_rec.get("chart_type", "table")
         )
         
-        if not from_cache:
+        if not from_cache and generated_query != "SELECT 1":
             self.nlq_memory.store(
                 tenant_id=tenant_id,
                 user_id=user_id,
