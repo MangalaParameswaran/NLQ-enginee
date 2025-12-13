@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -10,9 +10,9 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   Typography,
+  InputAdornment,
 } from '@mui/material';
-import { Send, Mic, Stop, Insights, TableChart, BarChart, Download } from '@mui/icons-material';
-import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { Send, Mic, Stop, Insights, TableChart, BarChart, Download, Clear } from '@mui/icons-material';
 
 export type OutputPreference = 'insights' | 'table' | 'chart' | 'download';
 
@@ -22,26 +22,122 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: Event) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
 const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, disabled }) => {
   const theme = useTheme();
   const [message, setMessage] = useState('');
   const [outputPreference, setOutputPreference] = useState<OutputPreference>('chart');
-  const { transcript, isListening, isSupported, startListening, stopListening, resetTranscript } =
-    useSpeechRecognition();
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const isListeningRef = useRef(false);
+
+  const isSupported = typeof window !== 'undefined' && 
+    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current && isListeningRef.current) {
+      recognitionRef.current.stop();
+      isListeningRef.current = false;
+      setIsListening(false);
+    }
+  }, []);
+
+  const startListening = useCallback(() => {
+    if (!isSupported) return;
+    
+    if (isListeningRef.current) {
+      stopListening();
+      return;
+    }
+
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+    }
+
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setMessage(transcript);
+    };
+
+    recognition.onerror = () => {
+      isListeningRef.current = false;
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      isListeningRef.current = false;
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    isListeningRef.current = true;
+    setIsListening(true);
+  }, [isSupported, stopListening]);
 
   useEffect(() => {
-    if (transcript) {
-      setMessage(transcript);
-    }
-  }, [transcript]);
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     const trimmedMessage = message.trim();
     if (trimmedMessage && !isLoading && !disabled) {
+      stopListening();
       onSend(trimmedMessage, outputPreference);
       setMessage('');
-      resetTranscript();
     }
   };
 
@@ -52,12 +148,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, disabled }) =>
     }
   };
 
-  const toggleVoice = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
+  const handleClear = () => {
+    setMessage('');
+    stopListening();
   };
 
   const handleOutputChange = (_: React.MouseEvent<HTMLElement>, newValue: OutputPreference | null) => {
@@ -139,6 +232,25 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, disabled }) =>
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             disabled={disabled || isLoading}
+            slotProps={{
+              input: {
+                endAdornment: message && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={handleClear}
+                      sx={{ 
+                        opacity: 0.6, 
+                        '&:hover': { opacity: 1 },
+                        mr: -0.5,
+                      }}
+                    >
+                      <Clear fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
@@ -153,16 +265,22 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, isLoading, disabled }) =>
           {isSupported && (
             <Tooltip title={isListening ? 'Stop recording' : 'Voice input'}>
               <IconButton
-                onClick={toggleVoice}
+                onClick={isListening ? stopListening : startListening}
                 disabled={disabled || isLoading}
                 sx={{
                   width: 48,
                   height: 48,
                   borderRadius: 2,
-                  background: isListening ? 'error.main' : 'transparent',
+                  background: isListening ? '#ef4444' : 'transparent',
                   color: isListening ? 'white' : 'text.primary',
+                  animation: isListening ? 'pulse 1.5s infinite' : 'none',
+                  '@keyframes pulse': {
+                    '0%': { boxShadow: '0 0 0 0 rgba(239, 68, 68, 0.4)' },
+                    '70%': { boxShadow: '0 0 0 10px rgba(239, 68, 68, 0)' },
+                    '100%': { boxShadow: '0 0 0 0 rgba(239, 68, 68, 0)' },
+                  },
                   '&:hover': {
-                    background: isListening ? 'error.dark' : 'action.hover',
+                    background: isListening ? '#dc2626' : 'action.hover',
                   },
                 }}
               >

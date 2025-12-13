@@ -12,7 +12,40 @@ import {
   Grid,
   useTheme,
 } from '@mui/material';
+import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
+
+const signupSchema = yup.object().shape({
+  name: yup
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .required('Full name is required'),
+  email: yup
+    .string()
+    .email('Please enter a valid email address')
+    .required('Email is required'),
+  password: yup
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .matches(/[0-9]/, 'Password must contain at least one number')
+    .required('Password is required'),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref('password')], 'Passwords must match')
+    .required('Please confirm your password'),
+  org: yup
+    .string()
+    .min(2, 'Organization must be at least 2 characters')
+    .required('Organization is required'),
+  tenant_name: yup
+    .string()
+    .min(2, 'Tenant name must be at least 2 characters')
+    .required('Tenant name is required'),
+  phone_number: yup
+    .string()
+    .optional(),
+});
 
 const Signup: React.FC = () => {
   const theme = useTheme();
@@ -27,25 +60,47 @@ const Signup: React.FC = () => {
     tenant_name: '',
     phone_number: '',
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateField = async (field: string) => {
+    try {
+      await signupSchema.validateAt(field, formData);
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        setErrors(prev => ({ ...prev, [field]: err.message }));
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setSubmitError('');
+    setErrors({});
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
+    try {
+      await signupSchema.validate(formData, { abortEarly: false });
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const newErrors: Record<string, string> = {};
+        err.inner.forEach(error => {
+          if (error.path) {
+            newErrors[error.path] = error.message;
+          }
+        });
+        setErrors(newErrors);
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -62,7 +117,7 @@ const Signup: React.FC = () => {
       navigate('/');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Signup failed';
-      setError(errorMessage);
+      setSubmitError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +144,7 @@ const Signup: React.FC = () => {
           width: '100%',
           borderRadius: 4,
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+          mx: 'auto',
         }}
       >
         <Box sx={{ textAlign: 'center', mb: 4 }}>
@@ -117,9 +173,9 @@ const Signup: React.FC = () => {
           </Typography>
         </Box>
 
-        {error && (
+        {submitError && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {error}
+            {submitError}
           </Alert>
         )}
 
@@ -132,7 +188,9 @@ const Signup: React.FC = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                required
+                onBlur={() => validateField('name')}
+                error={!!errors.name}
+                helperText={errors.name}
               />
             </Grid>
             <Grid size={12}>
@@ -143,7 +201,9 @@ const Signup: React.FC = () => {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                required
+                onBlur={() => validateField('email')}
+                error={!!errors.email}
+                helperText={errors.email}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -154,7 +214,9 @@ const Signup: React.FC = () => {
                 type="password"
                 value={formData.password}
                 onChange={handleChange}
-                required
+                onBlur={() => validateField('password')}
+                error={!!errors.password}
+                helperText={errors.password}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -165,7 +227,9 @@ const Signup: React.FC = () => {
                 type="password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                required
+                onBlur={() => validateField('confirmPassword')}
+                error={!!errors.confirmPassword}
+                helperText={errors.confirmPassword}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -175,7 +239,9 @@ const Signup: React.FC = () => {
                 name="org"
                 value={formData.org}
                 onChange={handleChange}
-                required
+                onBlur={() => validateField('org')}
+                error={!!errors.org}
+                helperText={errors.org || 'e.g., ITL, ITD'}
                 placeholder="e.g., ITL, ITD"
               />
             </Grid>
@@ -186,7 +252,9 @@ const Signup: React.FC = () => {
                 name="tenant_name"
                 value={formData.tenant_name}
                 onChange={handleChange}
-                required
+                onBlur={() => validateField('tenant_name')}
+                error={!!errors.tenant_name}
+                helperText={errors.tenant_name || 'Your company name'}
                 placeholder="Your company name"
               />
             </Grid>

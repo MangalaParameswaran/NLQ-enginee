@@ -8,8 +8,10 @@ import {
   useTheme,
   Snackbar,
   Alert,
+  Button,
+  Collapse,
 } from '@mui/material';
-import { Lightbulb } from '@mui/icons-material';
+import { Lightbulb, ExpandMore, ExpandLess, Download as DownloadIcon } from '@mui/icons-material';
 import Header from '../components/Layout/Header';
 import Sidebar from '../components/Layout/Sidebar';
 import ChatInput from '../components/Chat/ChatInput';
@@ -55,6 +57,7 @@ const Dashboard: React.FC = () => {
   const [sampleQuestions, setSampleQuestions] = useState<SampleQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentOutputPreference, setCurrentOutputPreference] = useState<OutputPreference>('chart');
+  const [showSamples, setShowSamples] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -129,9 +132,16 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const isQuerySupported = (query: string): boolean => {
+    const lowerQuery = query.toLowerCase();
+    const dataKeywords = ['show', 'list', 'get', 'find', 'count', 'total', 'average', 'sum', 'how many', 'what', 'which', 'top', 'bottom', 'highest', 'lowest', 'all', 'revenue', 'sales', 'orders', 'customers', 'products', 'users', 'employees', 'departments'];
+    return dataKeywords.some(keyword => lowerQuery.includes(keyword));
+  };
+
   const handleSendMessage = async (message: string, outputPreference: OutputPreference) => {
     setIsLoading(true);
     setCurrentOutputPreference(outputPreference);
+    setShowSamples(false);
 
     const tempUserMessage: Message = {
       id: Date.now(),
@@ -140,6 +150,20 @@ const Dashboard: React.FC = () => {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMessage]);
+
+    if (!isQuerySupported(message)) {
+      const suggestions = sampleQuestions.slice(0, 3).map(q => q.question).join('\n- ');
+      const assistantMessage: Message = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: `I'm not sure how to process that query. Here are some examples you can try:\n\n- ${suggestions}\n\nTry asking about your data using keywords like "show", "list", "count", "total", "average", etc.`,
+        created_at: new Date().toISOString(),
+        outputPreference: 'insights',
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await apiClient.post({
@@ -167,19 +191,35 @@ const Dashboard: React.FC = () => {
           loadConversations();
         }
 
+        const resultData = data.result?.data || [];
+        let effectiveChartType = data.chart?.chart_type || 'table';
+        let effectiveOutputPref = outputPreference;
+
+        if (outputPreference === 'chart' && resultData.length > 0) {
+          const columns = Object.keys(resultData[0] as Record<string, unknown>);
+          const numericCols = columns.filter(k => {
+            const val = (resultData[0] as Record<string, unknown>)[k];
+            return typeof val === 'number';
+          });
+          if (numericCols.length === 0 || resultData.length < 2) {
+            effectiveChartType = 'table';
+            effectiveOutputPref = 'table';
+          }
+        }
+
         const assistantMessage: Message = {
           id: data.message_id,
           role: 'assistant',
           content: data.explanation || 'Here are your results.',
           generated_query: data.generated_query?.sql,
-          chart_type: outputPreference === 'table' ? 'table' : (data.chart?.chart_type || 'table'),
+          chart_type: effectiveOutputPref === 'table' ? 'table' : effectiveChartType,
           chart_data: JSON.stringify({
-            data: data.result?.data || [],
+            data: resultData,
             config: data.chart || {},
           }),
           insights: JSON.stringify(data.insights || []),
           created_at: new Date().toISOString(),
-          outputPreference: outputPreference,
+          outputPreference: effectiveOutputPref,
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } else {
@@ -187,11 +227,15 @@ const Dashboard: React.FC = () => {
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: 'error',
-      });
+      const suggestions = sampleQuestions.slice(0, 3).map(q => q.question).join('\n- ');
+      const assistantMessage: Message = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: `Sorry, I couldn't process that query. ${errorMessage}\n\nTry these sample questions:\n- ${suggestions}`,
+        created_at: new Date().toISOString(),
+        outputPreference: 'insights',
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -215,6 +259,124 @@ const Dashboard: React.FC = () => {
   const handleSampleClick = (question: string) => {
     handleSendMessage(question, currentOutputPreference);
   };
+
+  const downloadAllReports = (format: 'csv' | 'pdf') => {
+    const allData: Record<string, unknown>[] = [];
+    messages.forEach(msg => {
+      if (msg.role === 'assistant' && msg.chart_data) {
+        try {
+          const parsed = JSON.parse(msg.chart_data);
+          if (parsed.data && Array.isArray(parsed.data)) {
+            allData.push(...parsed.data);
+          }
+        } catch { }
+      }
+    });
+
+    if (allData.length === 0) {
+      setSnackbar({ open: true, message: 'No data to download', severity: 'error' });
+      return;
+    }
+
+    if (format === 'csv') {
+      const headers = Object.keys(allData[0]);
+      const csvContent = [
+        headers.join(','),
+        ...allData.map(row => 
+          headers.map(h => {
+            const val = row[h];
+            if (typeof val === 'string' && val.includes(',')) {
+              return `"${val}"`;
+            }
+            return val;
+          }).join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `all_reports_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } else {
+      const headers = Object.keys(allData[0]);
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>All Reports</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; font-size: 18px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #3b82f6; color: white; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .meta { color: #666; font-size: 12px; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <h1>All Query Results</h1>
+          <div class="meta">Generated on ${new Date().toLocaleString()} | ${allData.length} records</div>
+          <table>
+            <thead>
+              <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${allData.map(row => 
+                `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>`
+              ).join('')}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `;
+
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    }
+    setSnackbar({ open: true, message: `Downloaded all reports as ${format.toUpperCase()}`, severity: 'success' });
+  };
+
+  const renderSampleQuestions = () => (
+    <Box sx={{ maxWidth: 800, mx: 'auto', mb: 2 }}>
+      <Button
+        size="small"
+        onClick={() => setShowSamples(!showSamples)}
+        startIcon={<Lightbulb />}
+        endIcon={showSamples ? <ExpandLess /> : <ExpandMore />}
+        sx={{ mb: 1 }}
+      >
+        {showSamples ? 'Hide suggestions' : 'Show sample questions'}
+      </Button>
+      <Collapse in={showSamples}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
+          {sampleQuestions.map((sample, index) => (
+            <Chip
+              key={index}
+              label={sample.question}
+              onClick={() => handleSampleClick(sample.question)}
+              sx={{
+                cursor: 'pointer',
+                borderRadius: 3,
+                py: 2.5,
+                '&:hover': {
+                  background: theme.palette.action.hover,
+                },
+              }}
+            />
+          ))}
+        </Box>
+      </Collapse>
+    </Box>
+  );
+
+  const hasDownloadableData = messages.some(msg => msg.role === 'assistant' && msg.chart_data);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -320,6 +482,29 @@ const Dashboard: React.FC = () => {
             </Box>
           ) : (
             <Box sx={{ maxWidth: 900, mx: 'auto' }}>
+              {hasDownloadableData && (
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 2, px: 2 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => downloadAllReports('csv')}
+                  >
+                    Download All (CSV)
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    onClick={() => downloadAllReports('pdf')}
+                  >
+                    Download All (PDF)
+                  </Button>
+                </Box>
+              )}
+              
+              {sampleQuestions.length > 0 && renderSampleQuestions()}
+              
               {messages.map((message) => (
                 <ChatMessage
                   key={message.id}

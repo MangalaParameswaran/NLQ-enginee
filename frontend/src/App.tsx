@@ -4,6 +4,7 @@ import { ThemeContextProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import { Box, CircularProgress } from '@mui/material';
 
@@ -73,6 +74,14 @@ const AppRoutes: React.FC = () => {
         element={
           <PublicRoute>
             <Signup />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
           </PublicRoute>
         }
       />

@@ -11,7 +11,23 @@ import {
   CircularProgress,
   useTheme,
 } from '@mui/material';
+import * as yup from 'yup';
 import { useAuth } from '../context/AuthContext';
+
+const loginSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email('Please enter a valid email address')
+    .required('Email is required'),
+  password: yup
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
+  org: yup
+    .string()
+    .min(2, 'Organization must be at least 2 characters')
+    .required('Organization is required'),
+});
 
 const Login: React.FC = () => {
   const theme = useTheme();
@@ -20,12 +36,41 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [org, setOrg] = useState('');
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const validateField = async (field: string, value: string) => {
+    try {
+      await loginSchema.validateAt(field, { [field]: value });
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        setErrors(prev => ({ ...prev, [field]: err.message }));
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setSubmitError('');
+    setErrors({});
+
+    try {
+      await loginSchema.validate({ email, password, org }, { abortEarly: false });
+    } catch (err) {
+      if (err instanceof yup.ValidationError) {
+        const newErrors: Record<string, string> = {};
+        err.inner.forEach(error => {
+          if (error.path) {
+            newErrors[error.path] = error.message;
+          }
+        });
+        setErrors(newErrors);
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -33,7 +78,7 @@ const Login: React.FC = () => {
       navigate('/');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed';
-      setError(errorMessage);
+      setSubmitError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -88,9 +133,9 @@ const Login: React.FC = () => {
           </Typography>
         </Box>
 
-        {error && (
+        {submitError && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {error}
+            {submitError}
           </Alert>
         )}
 
@@ -101,7 +146,9 @@ const Login: React.FC = () => {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
+            onBlur={() => validateField('email', email)}
+            error={!!errors.email}
+            helperText={errors.email}
             sx={{ mb: 2 }}
           />
           <TextField
@@ -110,7 +157,9 @@ const Login: React.FC = () => {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
+            onBlur={() => validateField('password', password)}
+            error={!!errors.password}
+            helperText={errors.password}
             sx={{ mb: 2 }}
           />
           <TextField
@@ -118,10 +167,18 @@ const Login: React.FC = () => {
             label="Organization"
             value={org}
             onChange={(e) => setOrg(e.target.value)}
-            required
+            onBlur={() => validateField('org', org)}
+            error={!!errors.org}
+            helperText={errors.org || 'e.g., ITL, ITD, engineering'}
             placeholder="e.g., ITL, ITD"
-            sx={{ mb: 3 }}
+            sx={{ mb: 1 }}
           />
+
+          <Box sx={{ textAlign: 'right', mb: 2 }}>
+            <Link component={RouterLink} to="/forgot-password" underline="hover" variant="body2">
+              Forgot password?
+            </Link>
+          </Box>
 
           <Button
             fullWidth
