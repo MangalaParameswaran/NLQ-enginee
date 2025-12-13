@@ -31,18 +31,38 @@ class QueryEngineService:
         return SAMPLE_QUESTIONS
     
     def get_schema_context(self, tenant_id: int, data_source_id: Optional[int] = None) -> str:
-        schema = """
-Available Tables:
-- users (id, email, name, tenant_id, organization_id, created_at)
-- tenants (id, name, display_name, created_at)
-- organizations (id, tenant_id, name, display_name)
-- conversations (id, tenant_id, user_id, title, created_at)
-- messages (id, conversation_id, role, content, created_at)
-- nlq_memories (id, tenant_id, user_id, normalized_query, raw_user_input, created_at)
-
-Note: All queries must filter by tenant_id for data isolation.
-"""
-        return schema
+        from app.models.datasource import DataSource
+        
+        data_sources = self.db.query(DataSource).filter(
+            DataSource.tenant_id == tenant_id,
+            DataSource.is_active == True
+        ).all()
+        
+        schema_parts = ["Available Tables and Schema:\n"]
+        
+        for ds in data_sources:
+            if ds.tables_info:
+                try:
+                    tables_info = json.loads(ds.tables_info) if isinstance(ds.tables_info, str) else ds.tables_info
+                    if isinstance(tables_info, dict) and "tables" in tables_info:
+                        for table in tables_info["tables"]:
+                            table_name = table.get("name", "unknown")
+                            description = table.get("description", "")
+                            columns = table.get("columns", [])
+                            schema_parts.append(f"- {table_name}: {description}")
+                            if columns:
+                                schema_parts.append(f"  Columns: {', '.join(columns)}")
+                except:
+                    pass
+            
+            if ds.schema_info:
+                schema_parts.append(f"\nData Source: {ds.name}")
+                schema_parts.append(f"Description: {ds.schema_info}")
+        
+        schema_parts.append(f"\nIMPORTANT: Filter analytics tables by tenant_id = {tenant_id} for data isolation.")
+        schema_parts.append("Generate only SELECT queries. Never generate INSERT, UPDATE, DELETE, or DROP statements.")
+        
+        return "\n".join(schema_parts)
     
     def execute_query(
         self,
