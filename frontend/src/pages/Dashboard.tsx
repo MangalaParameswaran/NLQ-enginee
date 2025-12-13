@@ -12,7 +12,7 @@ import {
 import { Lightbulb } from '@mui/icons-material';
 import Header from '../components/Layout/Header';
 import Sidebar from '../components/Layout/Sidebar';
-import ChatInput from '../components/Chat/ChatInput';
+import ChatInput, { OutputPreference } from '../components/Chat/ChatInput';
 import ChatMessage from '../components/Chat/ChatMessage';
 import { apiClient } from '../services/api';
 
@@ -28,6 +28,7 @@ interface Message {
   user_rating?: number;
   execution_time_ms?: number;
   created_at: string;
+  outputPreference?: string;
 }
 
 interface Conversation {
@@ -52,6 +53,7 @@ const Dashboard: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sampleQuestions, setSampleQuestions] = useState<SampleQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentOutputPreference, setCurrentOutputPreference] = useState<OutputPreference>('chart');
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -126,8 +128,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string, outputPreference: OutputPreference) => {
     setIsLoading(true);
+    setCurrentOutputPreference(outputPreference);
 
     const tempUserMessage: Message = {
       id: Date.now(),
@@ -168,13 +171,14 @@ const Dashboard: React.FC = () => {
           role: 'assistant',
           content: data.explanation || 'Here are your results.',
           generated_query: data.generated_query?.sql,
-          chart_type: data.chart?.chart_type,
+          chart_type: outputPreference === 'table' ? 'table' : (data.chart?.chart_type || 'table'),
           chart_data: JSON.stringify({
             data: data.result?.data || [],
             config: data.chart || {},
           }),
           insights: JSON.stringify(data.insights || []),
           created_at: new Date().toISOString(),
+          outputPreference: outputPreference,
         };
         setMessages((prev) => [...prev, assistantMessage]);
       } else {
@@ -208,7 +212,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleSampleClick = (question: string) => {
-    handleSendMessage(question);
+    handleSendMessage(question, currentOutputPreference);
   };
 
   return (

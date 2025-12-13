@@ -10,6 +10,10 @@ import {
   TextField,
   Button,
   useTheme,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Person,
@@ -18,6 +22,9 @@ import {
   ExpandLess,
   Code,
   ContentCopy,
+  Download,
+  PictureAsPdf,
+  TableChart,
 } from '@mui/icons-material';
 import ChartRenderer from '../Charts/ChartRenderer';
 
@@ -33,6 +40,7 @@ interface Message {
   user_rating?: number;
   execution_time_ms?: number;
   created_at: string;
+  outputPreference?: string;
 }
 
 interface ChatMessageProps {
@@ -46,6 +54,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onFeedback }) => {
   const [rating, setRating] = useState(message.user_rating || 0);
   const [feedback, setFeedback] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
+  const [downloadAnchor, setDownloadAnchor] = useState<null | HTMLElement>(null);
 
   const isUser = message.role === 'user';
 
@@ -62,6 +71,94 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onFeedback }) => {
       setShowFeedback(false);
     }
   };
+
+  const handleDownloadClick = (event: React.MouseEvent<HTMLElement>) => {
+    setDownloadAnchor(event.currentTarget);
+  };
+
+  const handleDownloadClose = () => {
+    setDownloadAnchor(null);
+  };
+
+  const downloadCSV = () => {
+    if (!chartData?.data || chartData.data.length === 0) return;
+    
+    const data = chartData.data;
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map((row: Record<string, unknown>) => 
+        headers.map(h => {
+          const val = row[h];
+          if (typeof val === 'string' && val.includes(',')) {
+            return `"${val}"`;
+          }
+          return val;
+        }).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `query_results_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    handleDownloadClose();
+  };
+
+  const downloadPDF = () => {
+    if (!chartData?.data || chartData.data.length === 0) return;
+    
+    const data = chartData.data;
+    const headers = Object.keys(data[0]);
+    
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Query Results</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { color: #333; font-size: 18px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #3b82f6; color: white; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          .meta { color: #666; font-size: 12px; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <h1>Query Results</h1>
+        <div class="meta">Generated on ${new Date().toLocaleString()}</div>
+        <table>
+          <thead>
+            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${data.map((row: Record<string, unknown>) => 
+              `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>`
+            ).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    handleDownloadClose();
+  };
+
+  const displayMode = message.outputPreference || 'chart';
+  const showInsights = displayMode === 'insights' || displayMode === 'chart';
+  const showChart = displayMode === 'chart' && chartData?.data?.length > 0;
+  const showTable = displayMode === 'table' && chartData?.data?.length > 0;
+  const showDownload = displayMode === 'download';
 
   return (
     <Box
@@ -166,15 +263,70 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onFeedback }) => {
 
           {!isUser && chartData && chartData.data && chartData.data.length > 0 && (
             <Box sx={{ mt: 2 }}>
-              <ChartRenderer
-                type={message.chart_type || 'table'}
-                data={chartData.data}
-                config={chartData.config || {}}
-              />
+              {(showChart || showTable || showDownload) && (
+                <ChartRenderer
+                  type={showTable ? 'table' : (message.chart_type || 'table')}
+                  data={chartData.data}
+                  config={chartData.config || {}}
+                />
+              )}
+              
+              {showDownload && (
+                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<TableChart />}
+                    onClick={downloadCSV}
+                    sx={{
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                      },
+                    }}
+                  >
+                    Download CSV
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<PictureAsPdf />}
+                    onClick={downloadPDF}
+                    sx={{
+                      background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+                      },
+                    }}
+                  >
+                    Download PDF
+                  </Button>
+                </Box>
+              )}
+
+              {!showDownload && (
+                <Box sx={{ mt: 1 }}>
+                  <IconButton size="small" onClick={handleDownloadClick}>
+                    <Download fontSize="small" />
+                  </IconButton>
+                  <Menu
+                    anchorEl={downloadAnchor}
+                    open={Boolean(downloadAnchor)}
+                    onClose={handleDownloadClose}
+                  >
+                    <MenuItem onClick={downloadCSV}>
+                      <ListItemIcon><TableChart fontSize="small" /></ListItemIcon>
+                      <ListItemText>Download as CSV</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={downloadPDF}>
+                      <ListItemIcon><PictureAsPdf fontSize="small" /></ListItemIcon>
+                      <ListItemText>Download as PDF</ListItemText>
+                    </MenuItem>
+                  </Menu>
+                </Box>
+              )}
             </Box>
           )}
 
-          {!isUser && insights && insights.length > 0 && (
+          {!isUser && showInsights && insights && insights.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="subtitle2" gutterBottom>
                 Key Insights
