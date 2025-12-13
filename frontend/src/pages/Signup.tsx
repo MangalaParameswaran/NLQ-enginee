@@ -125,7 +125,7 @@ const Signup: React.FC = () => {
 
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={2}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Full Name"
@@ -135,7 +135,7 @@ const Signup: React.FC = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Email"
@@ -146,7 +146,7 @@ const Signup: React.FC = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Password"
@@ -157,7 +157,7 @@ const Signup: React.FC = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Confirm Password"
@@ -168,7 +168,7 @@ const Signup: React.FC = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Organization"
@@ -179,7 +179,7 @@ const Signup: React.FC = () => {
                 placeholder="e.g., ITL, ITD"
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
                 label="Tenant Name"
@@ -190,7 +190,7 @@ const Signup: React.FC = () => {
                 placeholder="Your company name"
               />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Phone Number (optional)"

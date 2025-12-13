@@ -12,7 +12,8 @@ import {
 import { Lightbulb } from '@mui/icons-material';
 import Header from '../components/Layout/Header';
 import Sidebar from '../components/Layout/Sidebar';
-import ChatInput, { OutputPreference } from '../components/Chat/ChatInput';
+import ChatInput from '../components/Chat/ChatInput';
+import type { OutputPreference } from '../components/Chat/ChatInput';
 import ChatMessage from '../components/Chat/ChatMessage';
 import { apiClient } from '../services/api';
 
