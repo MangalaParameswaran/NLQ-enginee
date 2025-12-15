@@ -9,9 +9,9 @@ from app.services.gemini_service import gemini_service
 def test_generation():
     print("Testing SQL generation...")
     try:
-        query = "What is the total sales by product category?"
-        schema = "Table: products\nColumns: category, price\nTable: sales\nColumns: product_id, amount"
-        plan = {"tables": ["sales"], "select_columns": ["sum(amount)"]}
+        query = "Show me monthly expenses for 2024"
+        schema = "Table: analytics_expenses\nColumns: expense_date, amount, category, description\nIMPORTANT: Use ILIKE for string matching."
+        plan = {"tables": ["analytics_expenses"], "select_columns": ["date_trunc('month', expense_date)", "sum(amount)"]}
         
         sql = gemini_service.sql_generator.generate(query, plan, schema)
         print(f"Generated SQL: {sql}")

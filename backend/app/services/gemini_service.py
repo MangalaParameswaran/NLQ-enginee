@@ -240,8 +240,9 @@ Respond with ONLY the SQL query, no markdown formatting, no explanation:"""
                     return sql
         except Exception as e:
             logger.error(f"SQL generation failed: {e}", exc_info=True)
+            raise e
         
-        return "SELECT 1"
+        raise Exception("Failed to generate SQL query")
 
 
 class MongoPipelineGenerator:
@@ -399,10 +400,24 @@ class GeminiNLQService:
         plan = self.query_planner.plan(query, intent, metrics, filters, schema_context)
         
         if db_type.lower() == "mongodb":
-            generated_query = self.mongo_generator.generate(query, plan, schema_context)
+            try:
+                generated_query = self.mongo_generator.generate(query, plan, schema_context)
+            except Exception as e:
+                return {
+                    "error": str(e),
+                    "needs_clarification": False,
+                    "intent": intent
+                }
             query_type = "mongodb"
         else:
-            generated_query = self.sql_generator.generate(query, plan, schema_context)
+            try:
+                generated_query = self.sql_generator.generate(query, plan, schema_context)
+            except Exception as e:
+                return {
+                    "error": str(e),
+                    "needs_clarification": False,
+                    "intent": intent
+                }
             query_type = "sql"
         
         return {

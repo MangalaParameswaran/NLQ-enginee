@@ -141,6 +141,14 @@ class QueryEngineService:
                 "intent": nlq_result.get("intent", {})
             }
         
+        if nlq_result.get("error"):
+             return {
+                "message_id": assistant_message.id if 'assistant_message' in locals() else None,
+                "conversation_id": conversation_id,
+                "error": f"AI Generation Failed: {nlq_result.get('error')}",
+                "generated_query": {"sql": "SELECT 1", "is_read_only": True} # Fallback structure
+            }
+
         generated_query = nlq_result.get("generated_query", "SELECT 1")
         
         try:

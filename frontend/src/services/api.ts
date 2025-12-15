@@ -70,9 +70,41 @@ class ApiClient {
     );
   }
 
-  async post(request: GatewayRequest): Promise<GatewayResponse> {
+  async post(request: GatewayRequest, isRetry = false): Promise<GatewayResponse> {
     try {
       const response = await this.client.post('/gateway', request);
+      
+      // Handle soft 401s (HTTP 200 but error_code=UNAUTHORIZED)
+      if (response.data && response.data.error_code === 'UNAUTHORIZED' && !isRetry) {
+         const refreshToken = localStorage.getItem('refresh_token');
+         if (refreshToken) {
+            try {
+               // Attempt to refresh the token directly via axios to bypass recursive checks
+               const refreshResponse = await this.client.post('/gateway', {
+                  service: 'auth',
+                  action: 'refresh',
+                  payload: { refresh_token: refreshToken }
+               });
+               
+               if (refreshResponse.data && refreshResponse.data.success && refreshResponse.data.data) {
+                  const newTokens = refreshResponse.data.data as { access_token: string, refresh_token: string };
+                  localStorage.setItem('access_token', newTokens.access_token);
+                  localStorage.setItem('refresh_token', newTokens.refresh_token);
+                  
+                  // Retry the original request with the new token
+                  return this.post(request, true);
+               }
+            } catch (refreshError) {
+               console.error('Auto-refresh failed:', refreshError);
+            }
+         }
+         
+         // If refresh failed or no token, logout
+         localStorage.removeItem('access_token');
+         localStorage.removeItem('refresh_token');
+         window.location.href = '/login';
+      }
+
       return response.data;
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.data) {
