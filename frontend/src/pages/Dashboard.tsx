@@ -187,6 +187,10 @@ const Dashboard: React.FC = () => {
           loadConversations();
         }
 
+        if ((data as any).error) {
+          throw new Error((data as any).error);
+        }
+
         const resultData = (data.result?.data || []) as Record<string, unknown>[];
         let effectiveChartType = data.chart?.chart_type || 'table';
         let effectiveOutputPref = outputPreference;

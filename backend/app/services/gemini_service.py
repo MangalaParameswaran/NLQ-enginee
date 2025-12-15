@@ -239,7 +239,13 @@ Respond with ONLY the SQL query, no markdown formatting, no explanation:"""
                     sql = sql.replace("```sql", "").replace("```", "").strip()
                     return sql
         except Exception as e:
-            logger.error(f"SQL generation failed: {e}", exc_info=True)
+            error_msg = str(e)
+            if "429" in error_msg:
+                friendly_msg = "Usage limit exceeded (Google Gemini Free Tier). Please wait a minute and try again."
+                logger.warning(f"Rate limit hit: {error_msg}")
+                raise Exception(friendly_msg)
+            
+            logger.error(f"SQL generation failed: {error_msg}", exc_info=True)
             raise e
         
         raise Exception("Failed to generate SQL query")
