@@ -33,12 +33,12 @@ async def gateway(
     db: Session = Depends(get_db)
 ) -> GatewayResponse:
     try:
+        logger.info('---00002222222*************------', )
         service = gateway_request.service
         action = gateway_request.action
         payload = gateway_request.payload
         
         logger.info(f"Gateway request: service={service}, action={action}")
-        
         if service == ServiceType.AUTH:
             return await handle_auth(action, payload, db, request)
         
@@ -52,6 +52,7 @@ async def gateway(
                     error_code="UNAUTHORIZED"
                 )
         
+        logger.info('---00001*************------', service == ServiceType.QUERY)
         if service == ServiceType.QUERY:
             return await handle_query(action, payload, user, db)
         elif service == ServiceType.NLQ_MEMORY:

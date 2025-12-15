@@ -1,0 +1,14 @@
+# What Vite 7 requires
+20.19+  OR  22.12+
+
+# Navigate to frontend folder
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Start the development server
+npm run dev
+
+# Frontend runs on
+Frontend runs on: http://localhost:5000

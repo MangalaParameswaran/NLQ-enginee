@@ -10,7 +10,7 @@ client = None
 def get_gemini_client():
     global client
     if client is None:
-        api_key = os.environ.get("GEMINI_API_KEY", "")
+        api_key = settings.GEMINI_API_KEY
         if api_key:
             from google import genai
             client = genai.Client(api_key=api_key)
@@ -37,7 +37,6 @@ class IntentDetector:
     
     def detect(self, query: str, schema_context: str = "") -> Dict[str, Any]:
         prompt = f"""Analyze this natural language query and determine the intent.
-
 Query: "{query}"
 
 Available database schema:
@@ -46,9 +45,9 @@ Available database schema:
 Respond with JSON containing:
 - intent_type: one of {self.INTENTS}
 - confidence: float between 0 and 1
-- entities: extracted entities like table names, columns, values, time periods
-- is_ambiguous: boolean indicating if the query needs clarification
-- clarification_question: if ambiguous, what to ask the user
+- entities: extracted entities (tables, columns, time_periods, etc.)
+- is_ambiguous: boolean (true if query is unclear)
+- clarification_question: question to ask user if ambiguous
 
 JSON Response:"""
         
@@ -74,7 +73,7 @@ JSON Response:"""
                         "clarification_question": result.get("clarification_question")
                     }
         except Exception as e:
-            logger.error(f"Intent detection failed: {e}")
+            logger.error(f"Intent detection failed: {e}", exc_info=True)
         
         return {
             "intent_type": "summary",
@@ -124,7 +123,7 @@ JSON Response:"""
 
 class FilterBuilder:
     def build(self, query: str, entities: Dict[str, Any], schema_context: str = "") -> Dict[str, Any]:
-        prompt = f"""Extract filter conditions from this query.
+        prompt = f"""Extract filter conditions from this query for PostgreSQL.
 
 Query: "{query}"
 Entities: {json.dumps(entities)}
@@ -136,9 +135,9 @@ Respond with JSON containing:
 - time_range: object with start_date, end_date, relative (e.g., "last 7 days"), or null
 - conditions: list of filter conditions, each with:
   - field: column name
-  - operator: =, !=, >, <, >=, <=, LIKE, IN, BETWEEN
+  - operator: one of [=, !=, >, <, >=, <=, LIKE, ILIKE, IN, BETWEEN] (Use ILIKE for text/names)
   - value: the filter value
-- limit: number of results to return (default null for all)
+- limit: number of results to return (default null)
 - order_by: list of objects with field and direction (ASC/DESC)
 
 JSON Response:"""
@@ -218,14 +217,14 @@ Available database schema:
 {schema_context}
 
 IMPORTANT RULES:
-1. Generate ONLY SELECT statements - no INSERT, UPDATE, DELETE, DROP, etc.
-2. Use proper PostgreSQL syntax
-3. Include appropriate table aliases
-4. Handle NULL values properly
-5. Use COALESCE for potential nulls in aggregations
-6. Add LIMIT 1000 if no limit specified for safety
+1. Generate ONLY SELECT statements.
+2. Use ILIKE for all string matching conditions (e.g. name ILIKE '%term%') to handle case sensitivity.
+3. Handle NULL values (COALESCE).
+4. Cast strings to DATE/TIMESTAMP where necessary.
+5. Use table aliases for clarity.
+6. Limit results to 1000 if no limit specified.
 
-Respond with ONLY the SQL query, no explanation:"""
+Respond with ONLY the SQL query, no markdown formatting, no explanation:"""
         
         try:
             gemini = get_gemini_client()
@@ -240,7 +239,7 @@ Respond with ONLY the SQL query, no explanation:"""
                     sql = sql.replace("```sql", "").replace("```", "").strip()
                     return sql
         except Exception as e:
-            logger.error(f"SQL generation failed: {e}")
+            logger.error(f"SQL generation failed: {e}", exc_info=True)
         
         return "SELECT 1"
 

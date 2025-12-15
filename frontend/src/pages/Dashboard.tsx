@@ -132,11 +132,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const isQuerySupported = (query: string): boolean => {
-    const lowerQuery = query.toLowerCase();
-    const dataKeywords = ['show', 'list', 'get', 'find', 'count', 'total', 'average', 'sum', 'how many', 'what', 'which', 'top', 'bottom', 'highest', 'lowest', 'all', 'revenue', 'sales', 'orders', 'customers', 'products', 'users', 'employees', 'departments', 'trend'];
-    return dataKeywords.some(keyword => lowerQuery.includes(keyword));
-  };
+
 
   const isTrendQuery = (query: string): boolean => {
     const lowerQuery = query.toLowerCase();
@@ -163,20 +159,7 @@ const Dashboard: React.FC = () => {
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMessage]);
-
-    if (!isQuerySupported(message)) {
-      const suggestions = sampleQuestions.slice(0, 3).map(q => q.question).join('\n- ');
-      const assistantMessage: Message = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: `I'm not sure how to process that query. Here are some examples you can try:\n\n- ${suggestions}\n\nTry asking about your data using keywords like "show", "list", "count", "total", "average", etc.`,
-        created_at: new Date().toISOString(),
-        outputPreference: 'insights',
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-      return;
-    }
+    // Validation removed to allow NLP queries
 
     try {
       const response = await apiClient.post({
@@ -198,7 +181,7 @@ const Dashboard: React.FC = () => {
           result: { data: unknown[] };
           insights: unknown[];
         };
-        
+
         if (!selectedConversation && data.conversation_id) {
           setSelectedConversation(data.conversation_id);
           loadConversations();
@@ -306,7 +289,7 @@ const Dashboard: React.FC = () => {
       const headers = Object.keys(allData[0]);
       const csvContent = [
         headers.join(','),
-        ...allData.map(row => 
+        ...allData.map(row =>
           headers.map(h => {
             const val = row[h];
             if (typeof val === 'string' && val.includes(',')) {
@@ -348,9 +331,9 @@ const Dashboard: React.FC = () => {
               <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
             </thead>
             <tbody>
-              ${allData.map(row => 
-                `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>`
-              ).join('')}
+              ${allData.map(row =>
+        `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join('')}</tr>`
+      ).join('')}
             </tbody>
           </table>
         </body>
@@ -405,7 +388,7 @@ const Dashboard: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <Header onMenuClick={() => setSidebarOpen(true)} />
-      
+
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -526,9 +509,9 @@ const Dashboard: React.FC = () => {
                   </Button>
                 </Box>
               )}
-              
+
               {sampleQuestions.length > 0 && renderSampleQuestions()}
-              
+
               {messages.map((message) => (
                 <ChatMessage
                   key={message.id}

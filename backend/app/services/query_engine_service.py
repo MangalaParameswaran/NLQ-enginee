@@ -51,18 +51,36 @@ class QueryEngineService:
                             table_name = table.get("name", "unknown")
                             description = table.get("description", "")
                             columns = table.get("columns", [])
-                            schema_parts.append(f"- {table_name}: {description}")
+                            
+                            schema_parts.append(f"Table: {table_name}")
+                            if description:
+                                schema_parts.append(f"Description: {description}")
+                            
                             if columns:
-                                schema_parts.append(f"  Columns: {', '.join(columns)}")
-                except:
-                    pass
+                                schema_parts.append("Columns:")
+                                for col in columns:
+                                    # Handle string columns or object columns
+                                    if isinstance(col, str):
+                                        schema_parts.append(f"  - {col}")
+                                    elif isinstance(col, dict):
+                                        col_name = col.get("name", "")
+                                        col_type = col.get("type", "unknown")
+                                        col_desc = col.get("description", "")
+                                        schema_parts.append(f"  - {col_name} ({col_type}): {col_desc}")
+                            schema_parts.append("")  # Empty line between tables
+                except Exception as e:
+                    logger.error(f"Error parsing schema for DS {ds.id}: {e}")
             
             if ds.schema_info:
                 schema_parts.append(f"\nData Source: {ds.name}")
                 schema_parts.append(f"Description: {ds.schema_info}")
         
-        schema_parts.append(f"\nIMPORTANT: Filter analytics tables by tenant_id = {tenant_id} for data isolation.")
-        schema_parts.append("Generate only SELECT queries. Never generate INSERT, UPDATE, DELETE, or DROP statements.")
+        # Add critical global instructions for SQL generation
+        schema_parts.append(f"\nIMPORTANT CONTEXT:")
+        schema_parts.append(f"1. Tenant Isolation: ALWAYS filter by tenant_id = {tenant_id}")
+        schema_parts.append("2. String Matching: Use ILIKE for case-insensitive matching on text fields (e.g., name ILIKE '%value%')")
+        schema_parts.append("3. Date Handling: Cast strings to dates if needed. PostgreSQL dates are YYYY-MM-DD.")
+        schema_parts.append("4. Safety: Generate only SELECT queries. No INSERT/UPDATE/DELETE.")
         
         return "\n".join(schema_parts)
     
